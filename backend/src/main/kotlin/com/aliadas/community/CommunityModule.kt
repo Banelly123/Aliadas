@@ -11,6 +11,11 @@ import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.minus
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.plus
 
 // ── Tables ─────────────────────────────────────────────────────────────────
 object Posts : Table("posts") {
