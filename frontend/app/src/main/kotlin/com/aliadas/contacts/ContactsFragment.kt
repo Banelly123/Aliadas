@@ -2,14 +2,14 @@ package com.aliadas.contacts
 
 import android.content.Context
 import android.os.Bundle
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.aliadas.R
 import com.aliadas.databinding.FragmentContactsBinding
 import com.aliadas.databinding.ItemContactBinding
 import com.aliadas.databinding.DialogAddContactBinding
@@ -34,12 +34,15 @@ class ContactsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = ContactAdapter(contacts,
-            onDelete = { contact -> deleteContact(contact) }
-        )
+        // Se inicializa el adaptador pasando la lista y la acción de gestión segura
+        adapter = ContactAdapter(contacts) { contact -> 
+            showManageContactOptions(contact) 
+        }
+        
         binding.rvContacts.layoutManager = LinearLayoutManager(requireContext())
         binding.rvContacts.adapter = adapter
 
+        // Listeners vinculados de forma segura a la vista
         binding.fabAdd.setOnClickListener { showAddContactDialog() }
         binding.swipeRefresh.setOnRefreshListener { loadContacts() }
 
@@ -60,7 +63,7 @@ class ContactsFragment : Fragment() {
                     binding.tvEmpty.visibility = if (contacts.isEmpty()) View.VISIBLE else View.GONE
                 }
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error al cargar contactos", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Error de red con el servidor Railway", Toast.LENGTH_SHORT).show()
             } finally {
                 binding.swipeRefresh.isRefreshing = false
             }
@@ -96,32 +99,37 @@ class ContactsFragment : Fragment() {
                 val token = SessionManager.getBearerToken(requireContext())
                 val res = RetrofitClient.api.addContact(token, ContactRequest(name, phone, relation))
                 if (res.isSuccessful) {
-                    Toast.makeText(requireContext(), "✅ Contacto agregado", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "✅ Contacto guardado", Toast.LENGTH_SHORT).show()
                     loadContacts()
                 }
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error al agregar contacto", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Error al guardar el contacto", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private fun deleteContact(contact: ContactResponse) {
+    private fun showManageContactOptions(contact: ContactResponse) {
+        val options = arrayOf("Eliminar contacto", "Cancelar")
         AlertDialog.Builder(requireContext())
-            .setTitle("Eliminar contacto")
-            .setMessage("¿Eliminar a ${contact.name} de tus contactos de confianza?")
-            .setPositiveButton("Eliminar") { _, _ ->
-                lifecycleScope.launch {
-                    try {
-                        val token = SessionManager.getBearerToken(requireContext())
-                        RetrofitClient.api.deleteContact(token, contact.id)
-                        loadContacts()
-                    } catch (e: Exception) {
-                        Toast.makeText(requireContext(), "Error al eliminar", Toast.LENGTH_SHORT).show()
-                    }
-                }
+            .setTitle("Gestionar a ${contact.name}")
+            .setItems(options) { dialog, which ->
+                if (which == 0) deleteContact(contact)
+                dialog.dismiss()
             }
-            .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    private fun deleteContact(contact: ContactResponse) {
+        lifecycleScope.launch {
+            try {
+                val token = SessionManager.getBearerToken(requireContext())
+                RetrofitClient.api.deleteContact(token, contact.id)
+                loadContacts()
+                Toast.makeText(requireContext(), "Contacto eliminado con éxito", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error al eliminar el contacto", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun updateTrustedContactsCache(contacts: List<ContactResponse>) {
@@ -137,10 +145,10 @@ class ContactsFragment : Fragment() {
 
 class ContactAdapter(
     private val items: List<ContactResponse>,
-    private val onDelete: (ContactResponse) -> Unit
-) : RecyclerView.Adapter<ContactAdapter.VH>() {
+    private val onItemAction: (ContactResponse) -> Unit
+) : androidx.recyclerview.widget.RecyclerView.Adapter<ContactAdapter.VH>() {
 
-    inner class VH(val binding: ItemContactBinding) : RecyclerView.ViewHolder(binding.root)
+    inner class VH(val binding: ItemContactBinding) : androidx.recyclerview.widget.RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
         VH(ItemContactBinding.inflate(LayoutInflater.from(parent.context), parent, false))
@@ -152,6 +160,8 @@ class ContactAdapter(
         holder.binding.tvName.text = contact.name
         holder.binding.tvPhone.text = contact.phone
         holder.binding.tvRelation.text = contact.relation
-        holder.binding.btnDelete.setOnClickListener { onDelete(contact) }
+        
+        // Control preventivo de clics sobre la tarjeta para evitar desajustes visuales temporales
+        holder.root.setOnClickListener { onItemAction(contact) }
     }
 }
