@@ -22,9 +22,9 @@ object Posts : Table("posts") {
     val id = integer("id").autoIncrement()
     val userId = integer("user_id").references(com.aliadas.auth.Users.id)
     val content = text("content")
-    val category = varchar("category", 30).default("general") // general | duda | reporte | apoyo
+    val category = varchar("category", 30).default("general")
     val likesCount = integer("likes_count").default(0)
-    val createdAt = long("created_at").default(System.currentTimeMillis())
+    val createdAt = long("created_at")
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -39,14 +39,20 @@ object Comments : Table("comments") {
     val postId = integer("post_id").references(Posts.id)
     val userId = integer("user_id").references(com.aliadas.auth.Users.id)
     val content = text("content")
-    val createdAt = long("created_at").default(System.currentTimeMillis())
+    val createdAt = long("created_at")
     override val primaryKey = PrimaryKey(id)
 }
 
 // ── DTOs ───────────────────────────────────────────────────────────────────
 @Serializable data class PostRequest(val content: String, val category: String = "general")
 @Serializable data class CommentRequest(val content: String)
-@Serializable data class CommentResponse(val id: Int, val content: String, val createdAt: Long)
+
+@Serializable data class CommentResponse(
+    val id: Int,
+    val content: String,
+    val created_at: Long
+)
+
 @Serializable data class PostResponse(
     val id: Int,
     val content: String,
@@ -54,7 +60,7 @@ object Comments : Table("comments") {
     val likesCount: Int,
     val commentsCount: Int,
     val hasLiked: Boolean,
-    val createdAt: Long
+    val created_at: Long
 )
 
 // ── Routes ─────────────────────────────────────────────────────────────────
@@ -62,7 +68,6 @@ fun Routing.communityRoutes() {
     authenticate("auth-jwt") {
         route("/api/community") {
 
-            // GET posts (with filter: recent | popular | apoyo)
             get("/posts") {
                 val currentUserId = call.principal<JWTPrincipal>()!!.userId()
                 val filter = call.request.queryParameters["filter"] ?: "recent"
@@ -94,7 +99,6 @@ fun Routing.communityRoutes() {
                 call.respond(posts)
             }
 
-            // POST create post (anonymous - no user info returned)
             post("/posts") {
                 val userId = call.principal<JWTPrincipal>()!!.userId()
                 val req = call.receive<PostRequest>()
@@ -109,12 +113,12 @@ fun Routing.communityRoutes() {
                         it[Posts.userId] = userId
                         it[content] = req.content.trim()
                         it[category] = req.category
+                        it[createdAt] = System.currentTimeMillis() // ✅
                     } get Posts.id
                 }
                 call.respond(HttpStatusCode.Created, mapOf("id" to postId))
             }
 
-            // POST like/unlike
             post("/posts/{id}/like") {
                 val userId = call.principal<JWTPrincipal>()!!.userId()
                 val postId = call.parameters["id"]?.toIntOrNull()
@@ -138,7 +142,6 @@ fun Routing.communityRoutes() {
                 call.respond(mapOf("liked" to !alreadyLiked))
             }
 
-            // GET comments for post
             get("/posts/{id}/comments") {
                 val postId = call.parameters["id"]?.toIntOrNull()
                     ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("error" to "ID inválido"))
@@ -151,7 +154,6 @@ fun Routing.communityRoutes() {
                 call.respond(comments)
             }
 
-            // POST add comment
             post("/posts/{id}/comments") {
                 val userId = call.principal<JWTPrincipal>()!!.userId()
                 val postId = call.parameters["id"]?.toIntOrNull()
@@ -168,6 +170,7 @@ fun Routing.communityRoutes() {
                         it[Comments.postId] = postId
                         it[Comments.userId] = userId
                         it[content] = req.content.trim()
+                        it[createdAt] = System.currentTimeMillis() // ✅
                     } get Comments.id
                 }
                 call.respond(HttpStatusCode.Created, mapOf("id" to commentId))
