@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aliadas.R
 import com.aliadas.databinding.FragmentContactsBinding
@@ -42,6 +43,10 @@ class ContactsFragment : Fragment() {
         binding.rvContacts.layoutManager = LinearLayoutManager(requireContext())
         binding.rvContacts.adapter = adapter
 
+        binding.profileImageContainer.setOnClickListener {
+            findNavController().navigate(R.id.profileFragment)
+        }
+
         binding.fabAdd.setOnClickListener { showAddContactDialog() }
         binding.swipeRefresh.setOnRefreshListener { loadContacts() }
 
@@ -49,22 +54,32 @@ class ContactsFragment : Fragment() {
     }
 
     private fun loadContacts() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             binding.swipeRefresh.isRefreshing = true
             try {
                 val token = SessionManager.getBearerToken(requireContext())
+                if (token.isEmpty()) {
+                    _binding?.swipeRefresh?.isRefreshing = false
+                    return@launch
+                }
+                
                 val res = RetrofitClient.api.getContacts(token)
-                if (res.isSuccessful) {
+                if (res.isSuccessful && _binding != null) {
                     contacts.clear()
                     contacts.addAll(res.body() ?: emptyList())
                     adapter.notifyDataSetChanged()
                     updateTrustedContactsCache(contacts)
                     binding.tvEmpty.visibility = if (contacts.isEmpty()) View.VISIBLE else View.GONE
+                } else if (_binding != null) {
+                    Toast.makeText(requireContext(), "Error al cargar contactos: ${res.code()}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error al obtener contactos", Toast.LENGTH_SHORT).show()
+                android.util.Log.e("ALIADAS_DEBUG", "Error loading contacts", e)
+                if (_binding != null) {
+                    Toast.makeText(requireContext(), "Error de red al obtener contactos", Toast.LENGTH_SHORT).show()
+                }
             } finally {
-                binding.swipeRefresh.isRefreshing = false
+                _binding?.swipeRefresh?.isRefreshing = false
             }
         }
     }
@@ -103,16 +118,28 @@ class ContactsFragment : Fragment() {
     }
 
     private fun addContact(name: String, phone: String, relation: String) {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val token = SessionManager.getBearerToken(requireContext())
+                if (token.isEmpty()) {
+                    Toast.makeText(requireContext(), "Error: Sesión no válida", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                
                 val res = RetrofitClient.api.addContact(token, ContactRequest(name, phone, relation))
-                if (res.isSuccessful) {
+                if (res.isSuccessful && _binding != null) {
                     Toast.makeText(requireContext(), "✅ Contacto guardado con éxito", Toast.LENGTH_SHORT).show()
                     loadContacts()
+                } else if (_binding != null) {
+                    val errorBody = res.errorBody()?.string()
+                    android.util.Log.e("ALIADAS_DEBUG", "Error adding contact: $errorBody")
+                    Toast.makeText(requireContext(), "Error del servidor: ${res.code()}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error al guardar el contacto", Toast.LENGTH_SHORT).show()
+                android.util.Log.e("ALIADAS_DEBUG", "Exception adding contact", e)
+                if (_binding != null) {
+                    Toast.makeText(requireContext(), "Error de red: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -129,14 +156,19 @@ class ContactsFragment : Fragment() {
     }
 
     private fun deleteContact(contact: ContactResponse) {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val token = SessionManager.getBearerToken(requireContext())
-                RetrofitClient.api.deleteContact(token, contact.id)
-                loadContacts()
-                Toast.makeText(requireContext(), "Contacto eliminado con éxito", Toast.LENGTH_SHORT).show()
+                if (token.isEmpty()) return@launch
+                val res = RetrofitClient.api.deleteContact(token, contact.id)
+                if (res.isSuccessful && _binding != null) {
+                    loadContacts()
+                    Toast.makeText(requireContext(), "Contacto eliminado con éxito", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error al eliminar el contacto", Toast.LENGTH_SHORT).show()
+                if (_binding != null) {
+                    Toast.makeText(requireContext(), "Error al eliminar el contacto", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

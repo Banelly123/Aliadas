@@ -36,7 +36,8 @@ object SessionManager {
     }
 
     fun getBearerToken(context: Context): String {
-        return "Bearer ${getToken(context) ?: ""}"
+        val token = getToken(context)?.trim()
+        return if (token.isNullOrBlank()) "" else "Bearer $token"
     }
 
     fun getUserName(context: Context): String? = runBlocking {

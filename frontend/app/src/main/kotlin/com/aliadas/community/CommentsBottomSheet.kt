@@ -86,6 +86,14 @@ class CommentAdapter(private val items: List<CommentResponse>) : RecyclerView.Ad
     override fun getItemCount() = items.size
     override fun onBindViewHolder(holder: VH, position: Int) {
         holder.binding.tvContent.text = items[position].content
-        holder.binding.tvTime.text = DateUtils.getRelativeTimeSpanString(items[position].createdAt)
+        val timeMillis = items[position].createdAt
+        val now = System.currentTimeMillis()
+        // Aseguramos que el tiempo no sea "en el futuro" por desfases de servidor/cliente
+        val adjustedTime = if (timeMillis > now) now else timeMillis
+        holder.binding.tvTime.text = DateUtils.getRelativeTimeSpanString(
+            adjustedTime,
+            now,
+            DateUtils.MINUTE_IN_MILLIS
+        )
     }
 }

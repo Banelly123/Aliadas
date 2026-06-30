@@ -17,6 +17,7 @@ import android.content.Intent
 import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.navigation.fragment.findNavController
 
 // Maps avatar string IDs to drawable resource names
 val AVATAR_DRAWABLES = mapOf(
@@ -50,9 +51,15 @@ class ProfileFragment : Fragment() {
 
         loadProfile()
 
+        binding.btnBack.setOnClickListener { findNavController().popBackStack() }
         binding.btnChangeAvatar.setOnClickListener { showAvatarPicker() }
         binding.btnSave.setOnClickListener { saveProfile() }
         binding.btnLogout.setOnClickListener { logout() }
+
+        binding.profileImageContainer.setOnClickListener {
+            // Ya estamos en perfil, pero por consistencia:
+            Toast.makeText(requireContext(), "Ya estás en tu perfil", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun loadProfile() {
@@ -74,6 +81,7 @@ class ProfileFragment : Fragment() {
     private fun updateAvatarImage(avatarKey: String) {
         val drawableRes = AVATAR_DRAWABLES[avatarKey] ?: R.drawable.ic_avatar_flower
         binding.ivAvatar.setImageResource(drawableRes)
+        binding.ivAvatarToolbar.setImageResource(drawableRes)
     }
 
     private fun showAvatarPicker() {

@@ -18,17 +18,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <ImageView
-            android:id="@+id/btnMenu"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="8dp"
-            android:src="@drawable/ic_menu"
-            app:tint="#6100C5"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"/>
+
 
         <TextView
             android:id="@+id/txtAppName"
@@ -185,35 +175,6 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="24dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/fabMyLocation"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:contentDescription="Mi Ubicación"
-                app:backgroundTint="#FFFFFF"
-                app:fabCustomSize="48dp"
-                app:maxImageSize="24dp"
-                app:tint="#6100C5"
-                android:src="@drawable/ic_share_location" />
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/fabLayers"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="Capas del mapa"
-                app:backgroundTint="#FFFFFF"
-                app:fabCustomSize="48dp"
-                app:maxImageSize="24dp"
-                app:tint="#6100C5"
-                android:src="@drawable/ic_close" />
-        </LinearLayout>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

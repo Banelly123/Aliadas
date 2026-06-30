@@ -9,6 +9,20 @@
         <item name="android:colorBackground">@color/background</item>
         <item name="android:statusBarColor">@color/purple_primary</item>
         <item name="chipStyle">@style/AliadadChipStyle</item>
+        <item name="alertDialogTheme">@style/AliadasAlertDialogTheme</item>
+    </style>
+
+    <style name="AliadasAlertDialogTheme" parent="Theme.MaterialComponents.Light.Dialog.Alert">
+        <item name="colorPrimary">@color/purple_primary</item>
+        <item name="colorAccent">@color/purple_primary</item>
+        <item name="android:windowBackground">@drawable/bg_dialog_rounded</item>
+        <item name="buttonBarPositiveButtonStyle">@style/AliadasDialogButtonStyle</item>
+        <item name="buttonBarNegativeButtonStyle">@style/AliadasDialogButtonStyle</item>
+    </style>
+
+    <style name="AliadasDialogButtonStyle" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">@color/purple_primary</item>
+        <item name="android:textStyle">bold</item>
     </style>
 
     <style name="AliadadChipStyle" parent="Widget.MaterialComponents.Chip.Choice">

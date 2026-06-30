@@ -26,4 +26,10 @@
         android:name="com.aliadas.resources.ResourcesFragment"
         android:label="Recursos"
         tools:layout="@layout/fragment_resources" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.aliadas.profile.ProfileFragment"
+        android:label="Perfil"
+        tools:layout="@layout/fragment_profile" />
 </navigation>

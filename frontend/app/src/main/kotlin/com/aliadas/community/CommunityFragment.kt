@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aliadas.R
 import com.aliadas.databinding.FragmentCommunityBinding
@@ -61,24 +62,32 @@ class CommunityFragment : Fragment() {
         binding.btnPublish.setOnClickListener { publishPost() }
         binding.swipeRefresh.setOnRefreshListener { loadPosts() }
 
+        binding.profileImageContainer.setOnClickListener {
+            findNavController().navigate(R.id.profileFragment)
+        }
+
         loadPosts()
     }
 
     private fun loadPosts() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val token = SessionManager.getBearerToken(requireContext())
+                if (token.isEmpty()) return@launch
+                
                 val res = RetrofitClient.api.getPosts(token, currentFilter)
-                if (res.isSuccessful) {
+                if (res.isSuccessful && _binding != null) {
                     posts.clear()
                     posts.addAll(res.body() ?: emptyList())
                     adapter.notifyDataSetChanged()
                     binding.tvEmpty.visibility = if (posts.isEmpty()) View.VISIBLE else View.GONE
                 }
             } catch (_: Exception) {
-                Toast.makeText(requireContext(), "Error al cargar publicaciones", Toast.LENGTH_SHORT).show()
+                if (_binding != null) {
+                    Toast.makeText(requireContext(), "Error al cargar publicaciones", Toast.LENGTH_SHORT).show()
+                }
             } finally {
-                binding.swipeRefresh.isRefreshing = false
+                _binding?.swipeRefresh?.isRefreshing = false
             }
         }
     }
@@ -98,37 +107,45 @@ class CommunityFragment : Fragment() {
             else -> "general"
         }
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val token = SessionManager.getBearerToken(requireContext())
+                if (token.isEmpty()) return@launch
+                
                 val res = RetrofitClient.api.createPost(token, PostRequest(content, category))
-                if (res.isSuccessful) {
+                if (res.isSuccessful && _binding != null) {
                     binding.etPost.setText("")
                     Toast.makeText(requireContext(), "✅ Publicado anónimamente", Toast.LENGTH_SHORT).show()
                     loadPosts()
                 }
             } catch (_: Exception) {
-                Toast.makeText(requireContext(), "Error al subir la publicación", Toast.LENGTH_SHORT).show()
+                if (_binding != null) {
+                    Toast.makeText(requireContext(), "Error al subir la publicación", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
 
     private fun updateFilterButtonsVisuals(selectedButton: View) {
-        binding.chipRecent.setBackgroundResource(R.drawable.bg_pill_inactive)
-        binding.chipRecent.setTextColor(resources.getColor(android.R.color.black, null))
-        binding.chipPopular.setBackgroundResource(R.drawable.bg_pill_inactive)
-        binding.chipPopular.setTextColor(resources.getColor(android.R.color.black, null))
-        binding.chipApoyo.setBackgroundResource(R.drawable.bg_pill_inactive)
-        binding.chipApoyo.setTextColor(resources.getColor(android.R.color.black, null))
+        val inactiveTextColor = resources.getColor(R.color.purple_primary, null)
+        val inactiveBg = R.drawable.bg_pill_inactive
+        
+        binding.chipRecent.setBackgroundResource(inactiveBg)
+        binding.chipRecent.setTextColor(inactiveTextColor)
+        binding.chipPopular.setBackgroundResource(inactiveBg)
+        binding.chipPopular.setTextColor(inactiveTextColor)
+        binding.chipApoyo.setBackgroundResource(inactiveBg)
+        binding.chipApoyo.setTextColor(inactiveTextColor)
 
         selectedButton.setBackgroundResource(R.drawable.bg_pill_active)
         (selectedButton as? android.widget.Button)?.setTextColor(resources.getColor(R.color.white, null))
     }
 
     private fun likePost(post: PostResponse) {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val token = SessionManager.getBearerToken(requireContext())
+                if (token.isEmpty()) return@launch
                 RetrofitClient.api.likePost(token, post.id)
                 loadPosts()
             } catch (_: Exception) { }

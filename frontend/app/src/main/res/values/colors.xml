@@ -8,6 +8,7 @@
 
     <!-- Accent -->
     <color name="red_panic">#E53935</color>
+    <color name="red_error">#B00020</color>
     <color name="orange_accent">#F57C00</color>
     <color name="green_success">#43A047</color>
 

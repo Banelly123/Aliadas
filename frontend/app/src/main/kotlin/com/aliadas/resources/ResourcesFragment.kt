@@ -9,17 +9,23 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import com.aliadas.R
-import com.aliadas.auth.LoginActivity  // Asegúrate de que esta sea la ruta correcta de tu LoginActivity
-import com.aliadas.databinding.FragmentResourcesBinding
-import com.aliadas.utils.SessionManager
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.aliadas.R
+import com.aliadas.auth.LoginActivity
+import com.aliadas.databinding.FragmentResourcesBinding
+import com.aliadas.network.ResourceResponse
+import com.aliadas.network.RetrofitClient
+import com.aliadas.utils.SessionManager
 import kotlinx.coroutines.launch
 
 class ResourcesFragment : Fragment() {
 
     private var _binding: FragmentResourcesBinding? = null
     private val binding get() = _binding!!
+    private val resourcesList = mutableListOf<ResourceResponse>()
+    private lateinit var adapter: ResourceAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -32,37 +38,67 @@ class ResourcesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 1. Configuración de Marcadores Telefónicos de Emergencia
-        binding.btnCallPolice.setOnClickListener { triggerCall("091") }
-        binding.btnCallWoman.setOnClickListener { triggerCall("016") }
-        binding.btnCallMedical.setOnClickListener { triggerCall("911") }
+        setupRecyclerView()
+        setupClickListeners()
+        loadResources()
+    }
 
-        // 2. Enlaces Bento de Artículos Informativos
-        binding.cardArticleEmergency.setOnClickListener {
-            openWebPage("https://www.aliadas-seguridad.org/emergencias")
+    private fun setupRecyclerView() {
+        adapter = ResourceAdapter(resourcesList) { resource ->
+            if (resource.actionUrl.startsWith("tel:")) {
+                triggerCall(resource.actionUrl.substring(4))
+            } else {
+                openWebPage(resource.actionUrl)
+            }
         }
-        binding.cardArticlePsychology.setOnClickListener {
-            openWebPage("https://www.aliadas-seguridad.org/autodefensa")
-        }
+        binding.rvResources.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvResources.adapter = adapter
+    }
 
-        // 3. Lógica del Cierre de Sesión (Logout)
-        binding.txtLogout.setOnClickListener {
-            logoutUser()
+    private fun setupClickListeners() {
+        binding.profileImageContainer.setOnClickListener {
+            findNavController().navigate(R.id.profileFragment)
+        }
+        binding.swipeRefresh.setOnRefreshListener { loadResources() }
+    }
+
+    private fun loadResources() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            binding.swipeRefresh.isRefreshing = true
+            try {
+                val token = SessionManager.getBearerToken(requireContext())
+                if (token.isEmpty()) {
+                    _binding?.swipeRefresh?.isRefreshing = false
+                    return@launch
+                }
+
+                val res = RetrofitClient.api.getResources(token)
+                if (res.isSuccessful && _binding != null) {
+                    resourcesList.clear()
+                    resourcesList.addAll(res.body() ?: emptyList())
+                    adapter.notifyDataSetChanged()
+                    binding.tvEmpty.visibility = if (resourcesList.isEmpty()) View.VISIBLE else View.GONE
+                } else if (_binding != null) {
+                    if (res.code() == 401) {
+                        Toast.makeText(requireContext(), "Sesión expirada", Toast.LENGTH_SHORT).show()
+                        logoutUser()
+                    } else {
+                        Toast.makeText(requireContext(), "Error al cargar recursos", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                if (_binding != null) {
+                    Toast.makeText(requireContext(), "Error de red", Toast.LENGTH_SHORT).show()
+                }
+            } finally {
+                _binding?.swipeRefresh?.isRefreshing = false
+            }
         }
     }
 
     private fun logoutUser() {
         viewLifecycleOwner.lifecycleScope.launch {
-            // Limpiar el Token JWT de Railway guardado localmente
             SessionManager.clearSession(requireContext())
-
-            // Limpiar el caché de teléfonos de contactos de confianza
-            val prefs = requireContext().getSharedPreferences("aliadas_contacts", Context.MODE_PRIVATE)
-            prefs.edit().clear().apply()
-
-            Toast.makeText(requireContext(), "Sesión cerrada correctamente", Toast.LENGTH_SHORT).show()
-
-            // Redirigir de inmediato al LoginActivity borrando el historial de pantallas anteriores
             val intent = Intent(requireContext(), LoginActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
@@ -78,7 +114,7 @@ class ResourcesFragment : Fragment() {
             }
             startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(requireContext(), "No se pudo abrir el marcador telefónico", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "No se pudo abrir el marcador", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -87,7 +123,7 @@ class ResourcesFragment : Fragment() {
             val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             startActivity(browserIntent)
         } catch (e: Exception) {
-            Toast.makeText(requireContext(), "Navegador no disponible para abrir el artículo", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "No se pudo abrir el enlace", Toast.LENGTH_SHORT).show()
         }
     }
 

@@ -9,6 +9,8 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
+import com.aliadas.R
 import com.aliadas.databinding.FragmentHomeBinding
 import com.aliadas.utils.SessionManager
 import com.google.android.gms.location.LocationServices
@@ -45,6 +47,10 @@ class HomeFragment : Fragment() {
 
         binding.btnPanic.setOnClickListener {
             Toast.makeText(requireContext(), "🚨 ¡Alerta de pánico activada en tu ubicación!", Toast.LENGTH_LONG).show()
+        }
+
+        binding.profileImageContainer.setOnClickListener {
+            findNavController().navigate(R.id.profileFragment)
         }
     }
 
