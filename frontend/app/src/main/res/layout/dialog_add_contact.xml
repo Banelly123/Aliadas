@@ -13,6 +13,8 @@
         android:hint="Nombre completo"
         android:layout_marginBottom="12dp"
         app:boxStrokeColor="@color/purple_primary"
+        app:hintTextColor="@color/purple_primary"
+        android:textColorHint="@color/text_secondary"
         app:boxCornerRadiusTopStart="8dp"
         app:boxCornerRadiusTopEnd="8dp"
         app:boxCornerRadiusBottomStart="8dp"
@@ -21,7 +23,7 @@
             android:id="@+id/et_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#212121"
+            android:textColor="@color/text_primary"
             android:inputType="textPersonName" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -32,6 +34,8 @@
         android:hint="Número de teléfono"
         android:layout_marginBottom="12dp"
         app:boxStrokeColor="@color/purple_primary"
+        app:hintTextColor="@color/purple_primary"
+        android:textColorHint="@color/text_secondary"
         app:boxCornerRadiusTopStart="8dp"
         app:boxCornerRadiusTopEnd="8dp"
         app:boxCornerRadiusBottomStart="8dp"
@@ -39,7 +43,7 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_phone"
             android:layout_width="match_parent"
-            android:textColor="#212121"
+            android:textColor="@color/text_primary"
             android:layout_height="wrap_content"
             android:inputType="phone" />
     </com.google.android.material.textfield.TextInputLayout>
@@ -50,6 +54,8 @@
         android:layout_height="wrap_content"
         android:hint="Relación (ej: Mamá, Amiga)"
         app:boxStrokeColor="@color/purple_primary"
+        app:hintTextColor="@color/purple_primary"
+        android:textColorHint="@color/text_secondary"
         app:boxCornerRadiusTopStart="8dp"
         app:boxCornerRadiusTopEnd="8dp"
         app:boxCornerRadiusBottomStart="8dp"
@@ -59,7 +65,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textPersonName"
-            android:textColor="#212121"/>
+            android:textColor="@color/text_primary"/>
     </com.google.android.material.textfield.TextInputLayout>
 
 </LinearLayout>

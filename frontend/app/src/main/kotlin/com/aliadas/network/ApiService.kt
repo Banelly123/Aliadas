@@ -21,14 +21,14 @@ data class ContactResponse(val id: Int, val name: String, val phone: String, val
 data class PostRequest(val content: String, val category: String = "general")
 data class PostResponse(
     val id: Int, val content: String, val category: String,
-    val likesCount: Int, val commentsCount: Int, val hasLiked: Boolean, val createdAt: Long
+    val likesCount: Int, val commentsCount: Int, val hasLiked: Boolean,
+    @SerializedName("created_at") val createdAt: Long
 )
 data class CommentRequest(val content: String)
 data class CommentResponse(
-    val id: Int, 
-    val content: String, 
-    @SerializedName("hora_creacion") val createdAt: Long
-)
+    val id: Int,
+    val content: String,
+    @SerializedName("created_at") val createdAt: Long)
 
 data class ResourceResponse(
     val id: Int, val title: String, val description: String,

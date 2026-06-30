@@ -88,7 +88,6 @@ class CommentAdapter(private val items: List<CommentResponse>) : RecyclerView.Ad
         holder.binding.tvContent.text = items[position].content
         val timeMillis = items[position].createdAt
         val now = System.currentTimeMillis()
-        // Aseguramos que el tiempo no sea "en el futuro" por desfases de servidor/cliente
         val adjustedTime = if (timeMillis > now) now else timeMillis
         holder.binding.tvTime.text = DateUtils.getRelativeTimeSpanString(
             adjustedTime,
