@@ -10,10 +10,10 @@
         android:title="Contactos" />
     <item
         android:id="@+id/communityFragment"
-        android:icon="@drawable/ic_community"
-        android:title="Blog" />
+        android:icon="@drawable/ic_group"
+        android:title="Comunidad" />
     <item
         android:id="@+id/resourcesFragment"
-        android:icon="@drawable/ic_resources"
+        android:icon="@drawable/ic_library_books"
         android:title="Recursos" />
 </menu>

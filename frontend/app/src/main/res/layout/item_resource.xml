@@ -11,6 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:background="@color/purple_light"
         android:padding="20dp">
 
         <LinearLayout
@@ -39,7 +40,7 @@
                 android:layout_height="wrap_content"
                 android:text="24/7 Disponible"
                 android:textSize="11sp"
-                android:layout_marginStart="auto"
+                android:layout_marginStart="16dp"
                 android:layout_gravity="end"
                 android:visibility="gone"
                 app:chipBackgroundColor="#FFF0E6"

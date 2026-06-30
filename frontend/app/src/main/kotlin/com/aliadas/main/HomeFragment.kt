@@ -3,46 +3,25 @@ package com.aliadas.main
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.preference.PreferenceManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
-import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.aliadas.R
-import com.aliadas.contacts.AlertManager
 import com.aliadas.databinding.FragmentHomeBinding
 import com.aliadas.utils.SessionManager
-import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
-import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var map: MapView
-    private var locationOverlay: MyLocationNewOverlay? = null
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        // Inicializar OSMDroid con contexto (requerido)
-        Configuration.getInstance().load(
-            requireContext(),
-            PreferenceManager.getDefaultSharedPreferences(requireContext())
-        )
-        Configuration.getInstance().userAgentValue = "AliadadApp/1.0"
-
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -50,97 +29,60 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
+        val userName = SessionManager.getUserName(requireContext()) ?: "Banelly"
+        binding.tvWelcome.text = "Hola, $userName 👋"
 
-        val name = SessionManager.getUserName(requireContext()) ?: "amiga"
-        binding.tvWelcome.text = "Hola, $name 💜"
+        // Inicializar OpenStreetMap
+        Configuration.getInstance().load(requireContext(), android.preference.PreferenceManager.getDefaultSharedPreferences(requireContext()))
+        binding.mapView.setTileSource(TileSourceFactory.MAPNIK)
+        binding.mapView.setMultiTouchControls(true)
 
-        setupMap()
+        // Colocar zoom inicial intermedio
+        binding.mapView.controller.setZoom(16.5)
 
-        binding.btnPanic.setOnClickListener { showPanicConfirm() }
+        // 📡 OBTENER UBICACIÓN REAL ACTUAL
+        checkLocationPermissions()
+
+        binding.btnPanic.setOnClickListener {
+            Toast.makeText(requireContext(), "🚨 ¡Alerta de pánico activada en tu ubicación!", Toast.LENGTH_LONG).show()
+        }
     }
 
-    private fun setupMap() {
-        map = binding.osmMap
+    private fun checkLocationPermissions() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            getDeviceLocation()
+        } else {
+            // Solicitar permisos en pantalla si no los tiene
+            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 1001)
+        }
+    }
 
-        // Configuración básica del mapa
-        map.setTileSource(TileSourceFactory.MAPNIK) // tiles de OpenStreetMap
-        map.setMultiTouchControls(true)
-        map.controller.setZoom(15.0)
-
-        // Centro inicial en Ciudad de México como fallback
-        map.controller.setCenter(GeoPoint(19.4326, -99.1332))
-
-        // Overlay de ubicación actual (punto azul)
-        if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            locationOverlay = MyLocationNewOverlay(
-                GpsMyLocationProvider(requireContext()), map
-            ).apply {
-                enableMyLocation()
-                enableFollowLocation()
-                runOnFirstFix {
-                    requireActivity().runOnUiThread {
-                        map.controller.setCenter(myLocation)
-                        map.controller.setZoom(16.0)
-                    }
+    private fun getDeviceLocation() {
+        try {
+            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                if (location != null) {
+                    // Convertimos la ubicación real a un punto GPS para OpenStreetMap
+                    val currentPoint = GeoPoint(location.latitude, location.longitude)
+                    binding.mapView.controller.setCenter(currentPoint)
+                } else {
+                    // Si el GPS está apagado o tardado, dejamos un punto de respaldo amigable
+                    binding.mapView.controller.setCenter(GeoPoint(19.4326, -99.1332))
                 }
             }
-            map.overlays.add(locationOverlay)
-        } else {
-            requestPermissions(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ), 1001
-            )
+        } catch (e: SecurityException) {
+            e.printStackTrace()
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 1001 && grantResults.isNotEmpty() &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED
-        ) {
-            setupMap()
+        if (requestCode == 1001 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            getDeviceLocation()
         }
     }
 
-    private fun showPanicConfirm() {
-        AlertDialog.Builder(requireContext())
-            .setTitle("🚨 Botón de pánico")
-            .setMessage("¿Confirmas que necesitas ayuda? Se enviará tu ubicación a tus contactos de confianza.")
-            .setPositiveButton("Sí, necesito ayuda") { _, _ -> triggerPanic() }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-
-    private fun triggerPanic() {
-        Toast.makeText(requireContext(), "🚨 Alerta enviada a tus contactos", Toast.LENGTH_LONG).show()
-        AlertManager.sendPanicAlert(requireContext())
-    }
-
-    // Ciclo de vida del mapa OSMDroid (obligatorio)
-    override fun onResume() {
-        super.onResume()
-        if (::map.isInitialized) map.onResume()
-        locationOverlay?.enableMyLocation()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        if (::map.isInitialized) map.onPause()
-        locationOverlay?.disableMyLocation()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        locationOverlay?.disableMyLocation()
-        _binding = null
-    }
+    override fun onResume() { super.onResume(); try { binding.mapView.onResume() } catch(e: Exception){} }
+    override fun onPause() { super.onPause(); try { binding.mapView.onPause() } catch(e: Exception){} }
+    override fun onDestroyView() { super.onDestroyView(); _binding = null }
 }

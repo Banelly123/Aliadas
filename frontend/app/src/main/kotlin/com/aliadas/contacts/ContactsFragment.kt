@@ -10,6 +10,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.aliadas.R
 import com.aliadas.databinding.FragmentContactsBinding
 import com.aliadas.databinding.ItemContactBinding
 import com.aliadas.databinding.DialogAddContactBinding
@@ -34,15 +35,13 @@ class ContactsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Se inicializa el adaptador pasando la lista y la acción de gestión segura
-        adapter = ContactAdapter(contacts) { contact -> 
-            showManageContactOptions(contact) 
+        adapter = ContactAdapter(contacts) { contact ->
+            showManageContactOptions(contact)
         }
-        
+
         binding.rvContacts.layoutManager = LinearLayoutManager(requireContext())
         binding.rvContacts.adapter = adapter
 
-        // Listeners vinculados de forma segura a la vista
         binding.fabAdd.setOnClickListener { showAddContactDialog() }
         binding.swipeRefresh.setOnRefreshListener { loadContacts() }
 
@@ -63,7 +62,7 @@ class ContactsFragment : Fragment() {
                     binding.tvEmpty.visibility = if (contacts.isEmpty()) View.VISIBLE else View.GONE
                 }
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error de red con el servidor Railway", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Error al obtener contactos", Toast.LENGTH_SHORT).show()
             } finally {
                 binding.swipeRefresh.isRefreshing = false
             }
@@ -75,22 +74,32 @@ class ContactsFragment : Fragment() {
             Toast.makeText(requireContext(), "Máximo 5 contactos de confianza", Toast.LENGTH_SHORT).show()
             return
         }
+
         val dialogBinding = DialogAddContactBinding.inflate(layoutInflater)
-        AlertDialog.Builder(requireContext())
+
+        val dialog = AlertDialog.Builder(requireContext())
             .setTitle("Agregar contacto de confianza")
             .setView(dialogBinding.root)
-            .setPositiveButton("Agregar") { _, _ ->
+            .setPositiveButton("Agregar", null) // Ponemos null para anular el cierre automático
+            .setNegativeButton("Cancelar", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val button = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            button.setOnClickListener {
                 val name = dialogBinding.etName.text.toString().trim()
                 val phone = dialogBinding.etPhone.text.toString().trim()
                 val relation = dialogBinding.etRelation.text.toString().trim().ifBlank { "Contacto" }
+
                 if (name.isNotEmpty() && phone.isNotEmpty()) {
                     addContact(name, phone, relation)
+                    dialog.dismiss() // Se cierra únicamente si pasa la validación
                 } else {
                     Toast.makeText(requireContext(), "Nombre y teléfono son requeridos", Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("Cancelar", null)
-            .show()
+        }
+        dialog.show()
     }
 
     private fun addContact(name: String, phone: String, relation: String) {
@@ -99,7 +108,7 @@ class ContactsFragment : Fragment() {
                 val token = SessionManager.getBearerToken(requireContext())
                 val res = RetrofitClient.api.addContact(token, ContactRequest(name, phone, relation))
                 if (res.isSuccessful) {
-                    Toast.makeText(requireContext(), "✅ Contacto guardado", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "✅ Contacto guardado con éxito", Toast.LENGTH_SHORT).show()
                     loadContacts()
                 }
             } catch (e: Exception) {
@@ -140,28 +149,5 @@ class ContactsFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-}
-
-class ContactAdapter(
-    private val items: List<ContactResponse>,
-    private val onItemAction: (ContactResponse) -> Unit
-) : androidx.recyclerview.widget.RecyclerView.Adapter<ContactAdapter.VH>() {
-
-    inner class VH(val binding: ItemContactBinding) : androidx.recyclerview.widget.RecyclerView.ViewHolder(binding.root)
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-        VH(ItemContactBinding.inflate(LayoutInflater.from(parent.context), parent, false))
-
-    override fun getItemCount() = items.size
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        val contact = items[position]
-        holder.binding.tvName.text = contact.name
-        holder.binding.tvPhone.text = contact.phone
-        holder.binding.tvRelation.text = contact.relation
-        
-        // Control preventivo de clics sobre la tarjeta para evitar desajustes visuales temporales
-        holder.root.setOnClickListener { onItemAction(contact) }
     }
 }

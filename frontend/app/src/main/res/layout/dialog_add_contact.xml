@@ -21,6 +21,7 @@
             android:id="@+id/et_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:textColor="#212121"
             android:inputType="textPersonName" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -38,6 +39,7 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_phone"
             android:layout_width="match_parent"
+            android:textColor="#212121"
             android:layout_height="wrap_content"
             android:inputType="phone" />
     </com.google.android.material.textfield.TextInputLayout>
@@ -56,7 +58,8 @@
             android:id="@+id/et_relation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textPersonName" />
+            android:inputType="textPersonName"
+            android:textColor="#212121"/>
     </com.google.android.material.textfield.TextInputLayout>
 
 </LinearLayout>
